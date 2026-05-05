@@ -1,0 +1,4 @@
+camoufox
+playwright
+Faker
+camoufox[geoip]
