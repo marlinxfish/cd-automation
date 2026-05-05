@@ -281,15 +281,25 @@ def run():
                     
                 # Gunakan force=True agar tidak diblokir oleh halaman loading atau overlay
                 try:
-                    page.get_by_text("Profile", exact=False).first.click(timeout=5000, force=True)
+                    # Coba klik dari href profile dulu (lebih kebal bahasa)
+                    page.locator("a[href*='profile']").first.click(timeout=5000, force=True)
                 except:
-                    pass
+                    try:
+                        page.get_by_text("Profile", exact=False).first.click(timeout=10000, force=True)
+                    except:
+                        pass
                 
                 log("PROSES", "Membuka menu Access Key...")
+                # VPS Linux biasanya butuh waktu lebih lama untuk memuat halaman, perpanjang timeout ke 20s
                 try:
-                    page.get_by_role("link", name="Access Keys").click(timeout=5000, force=True)
+                    page.get_by_role("link", name="Access Keys").click(timeout=20000, force=True)
                 except:
-                    page.locator("a[href*='key'], a[href*='access']").first.click(timeout=5000, force=True)
+                    try:
+                        page.locator("a[href*='key'], a[href*='access']").first.click(timeout=20000, force=True)
+                    except:
+                        # Fallback darurat: tembak langsung ke URL profile jika klik mati
+                        page.goto("https://www.codebuddy.ai/profile")
+                        page.locator("a[href*='key'], a[href*='access']").first.click(timeout=15000, force=True)
                 
                 log("PROSES", "Membuat Access Key baru...")
                 page.get_by_role("button", name="Create Key").click(force=True)
