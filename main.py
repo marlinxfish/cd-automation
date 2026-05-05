@@ -86,6 +86,19 @@ def get_best_proxy(proxies):
     log("PROXY", f"Proxy tercepat dipilih: {best_proxy.split(':')[0]} (Lokasi: {best_country}, Latensi: {best_time:.2f}s)")
     return best_proxy
 
+def move_to_done(email, password, status="SUKSES"):
+    try:
+        with open("mail.txt", "r") as f:
+            lines = f.readlines()
+        with open("mail.txt", "w") as f:
+            for line in lines:
+                if not line.strip().startswith(f"{email}:") and not line.strip().startswith(f"//{email}:"):
+                    f.write(line)
+        with open("done.txt", "a") as f:
+            f.write(f"{email}:{password} | Status: {status}\n")
+    except Exception as ex:
+        log("WARNING", f"Gagal memindahkan {email} ke done.txt: {ex}")
+
 def run():
     print(f"\n{CYAN}=== PENGATURAN BROWSER ==={RESET}")
     while True:
@@ -157,6 +170,7 @@ def run():
         with Camoufox(**kwargs) as browser:
             context = browser.new_context()
             page = context.new_page()
+            registered = False
             
             try:
                 log("PROSES", "Membuka halaman Codebuddy...")
@@ -218,6 +232,7 @@ def run():
                     page.wait_for_timeout(500)
                 
                 page.wait_for_url(lambda url: "codebuddy.ai" in url and "google.com" not in url, timeout=60000)
+                registered = True
                 
                 log("PROSES", "Memproses Region dan memuat Profil...")
                 try:
@@ -319,22 +334,13 @@ def run():
                     rf.write(f"{email}:{key}\n")
                 
                 log("SUKSES", f"Key tersimpan untuk {email}")
-                
-                # Update mail.txt dengan memberi awalan // pada akun yang sukses
-                try:
-                    with open("mail.txt", "r") as f_read:
-                        all_mail_lines = f_read.readlines()
-                    with open("mail.txt", "w") as f_write:
-                        for m_line in all_mail_lines:
-                            if m_line.strip().startswith(f"{email}:"):
-                                f_write.write(f"//{m_line}")
-                            else:
-                                f_write.write(m_line)
-                except Exception as ex:
-                    log("WARNING", f"Gagal mengupdate mail.txt: {ex}")
+                move_to_done(email, password, "SUKSES")
                     
             except Exception as e:
                 log("ERROR", f"Gagal memproses {email} | Error: {e}")
+                if registered:
+                    log("WARNING", f"Akun {email} sudah menembus tahap Login. Dipindahkan ke done.txt agar tidak error berulang.")
+                    move_to_done(email, password, "GAGAL_SEBAGIAN (Sudah Terdaftar)")
             
             finally:
                 context.close()
